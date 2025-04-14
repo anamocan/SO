@@ -1,0 +1,122 @@
+#include <string.h>
+#include <sys/stat.h>   // mkdir
+#include <sys/types.h>  // mkdir
+#include <unistd.h>     // access
+
+#define DIRNAME "treasure_data"
+#define FILENAME "treasure_data/treasures.txt"
+#define MAX_LINE 512
+#define MAX_CLUE 256
+#define MAX_USER 64
+
+typedef struct {
+    int id;
+    char username[MAX_USER];
+    float latitude;
+    float longitude;
+    char clue[MAX_CLUE];
+    int value;
+} Treasure;
+
+void ensure_directory_exists() {
+    if (access(DIRNAME, F_OK) != 0) {
+        // Directory doesn't exist, create it
+        if (mkdir(DIRNAME, 0755) == 0) {
+            printf("Created directory '%s'\n", DIRNAME);
+        } else {
+            perror("Failed to create directory");
+            exit(1);
+        }
+    }
+}
+
+void create_treasure() {
+    ensure_directory_exists();
+
+    Treasure t;
+    FILE *file = fopen(FILENAME, "a");
+    if (!file) {
+        perror("Failed to open file");
+        return;
+    }
+
+    printf("Enter Treasure ID: ");
+    scanf("%d", &t.id);
+    getchar(); // consume newline
+
+    printf("Enter Username (unique): ");
+    fgets(t.username, MAX_USER, stdin);
+    t.username[strcspn(t.username, "\n")] = '\0';
+
+    printf("Enter Latitude: ");
+    scanf("%f", &t.latitude);
+    printf("Enter Longitude: ");
+    scanf("%f", &t.longitude);
+    getchar();
+
+    printf("Enter Clue Text: ");
+    fgets(t.clue, MAX_CLUE, stdin);
+    t.clue[strcspn(t.clue, "\n")] = '\0';
+
+    printf("Enter Value: ");
+    scanf("%d", &t.value);
+
+    fprintf(file, "%d|%s|%.4f|%.4f|%s|%d\n",
+            t.id, t.username, t.latitude, t.longitude, t.clue, t.value);
+    fclose(file);
+
+    printf("Treasure saved successfully!\n");
+}
+
+void read_treasures() {
+    ensure_directory_exists();
+
+    FILE *file = fopen(FILENAME, "r");
+    if (!file) {
+        perror("Failed to open file");
+        return;
+    }
+
+    char line[MAX_LINE];
+    printf("\n--- Stored Treasures ---\n");
+    while (fgets(line, sizeof(line), file)) {
+        Treasure t;
+        sscanf(line, "%d|%[^|]|%f|%f|%[^|]|%d",
+               &t.id, t.username, &t.latitude, &t.longitude, t.clue, &t.value);
+
+        printf("ID: %d\nUser: %s\nGPS: (%.4f, %.4f)\nClue: %s\nValue: %d\n\n",
+               t.id, t.username, t.latitude, t.longitude, t.clue, t.value);
+    }
+    fclose(file);
+}
+
+int main() {
+    int choice;
+
+    do {
+        printf("\nTreasure Manager\n");
+        printf("1. Create a new treasure\n");
+        printf("2. Read all treasures\n");
+        printf("0. Exit\n");
+        printf("Choice: ");
+        scanf("%d", &choice);
+        getchar(); // flush newline
+
+        switch (choice) {
+            case 1:
+                create_treasure();
+                break;
+            case 2:
+                read_treasures();
+                break;
+            case 0:
+                printf("Exiting.\n");
+                break;
+            default:
+                printf("Invalid option. Try again.\n");
+        }
+
+    } while (choice != 0);
+
+    return 0;
+}
