@@ -165,3 +165,4 @@ void remove_hunt(const char *hunt_id) {
         printf("Failed to remove hunt.\n");
     }
 }
+// debug
